@@ -1,0 +1,5 @@
+WEBSITE,PRICE_TAG
+Teknosa,"prc prc-third"
+Amazon,"a-offscreen"
+Trendyol,"'span',class_='prc-dsc"
+Hepsiburada,"'span',attrs={'data-bind':"markupText:'currentPriceBeforePoint'"}"
