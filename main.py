@@ -2,7 +2,8 @@ import requests
 import lxml
 from bs4 import BeautifulSoup
 import pandas
-from csv import DictWriter
+from csv import DictWriter, reader
+import csv
 
 #---------- Url'den company name bulma---------------------------
 data=pandas.read_csv("price_tags.csv")
@@ -24,14 +25,16 @@ def find_company_in_url(url):
     return "No company name found in the link"
 
 found_company = find_company_in_url(url)
+print(found_company)
 
 #---------------------------------------------------------------
 tag=data[data.WEBSITE == found_company]
-price_tag= tag.PRICE_TAG[0]
+price_tag= tag.iloc[0]['PRICE_TAG']
+print(price_tag)
 
 
 #---------------bulunan price ve company name data.csvye yazılır.---------
-def find_price(url,tag):
+def find_price(url,tag,company):
     field_names = ['WEBSITE', 'PRİCE']
     response = requests.get(url, headers=header)
     soup = BeautifulSoup(response.content, "lxml")
@@ -41,22 +44,64 @@ def find_price(url,tag):
     whole_price="".join(price_without_currency)
     
     
-    dict = {'WEBSITE':"Teknosa", 'PRİCE':whole_price}
+    dict = {'WEBSITE':company, 'PRİCE':whole_price}
 
     with open('data.csv', 'a') as f_object:
         Dictwriter_object= DictWriter(f_object,fieldnames=field_names)
         Dictwriter_object.writerow(dict)
         f_object.close()
 #------------------------------------------------------------------------
+founded=find_price(url,price_tag,found_company)
 
-founded=find_price(url,price_tag)
 
 price_info=pandas.read_csv("data.csv")
 data_dict=price_info.to_dict()
-def is_price_chanced():
-    price_data=price_info[price_info.WEBSITE == found_company]
-    old_price=price_info.PRICE[3]
-    return old_price
+print(data_dict)
 
-p=is_price_chanced()
-print(p)
+#----------------------price güncelle----------
+def update_price(company,new_price):
+    with open('data.csv', mode='r') as file:
+        reader = csv.DictReader(file)
+        rows = list(reader)
+
+    field_names = ['WEBSITE', 'PRICE']
+    for row in rows:
+        if row['WEBSITE'] == company:
+            row['PRICE'] = new_price
+
+    with open('data.csv', mode='w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=field_names)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+#------------------price degismi mi kontrol eder---------------
+        
+def is_price_chanced(company,url,tag):
+    field_names = ['WEBSITE', 'PRİCE']
+    response = requests.get(url, headers=header)
+    soup = BeautifulSoup(response.content, "lxml")
+    price_data=price_info[price_info.WEBSITE == company]
+
+    if price_data.empty:
+            return "empty dataframe"
+    else:
+        old_price=price_data.iloc[0]['PRICE']
+        print(old_price)
+    
+    price=soup.find(class_=tag).get_text()
+    price_without_currency = price.split(" ")[0].split(".")
+    new_price="".join(price_without_currency)
+    print(new_price)
+
+    price_diff = int(new_price) - int(old_price)
+    if price_diff == 0:
+        return "The price has not changed."
+    elif price_diff > 0:
+        return update_price(found_company,new_price)
+    else:
+        return  update_price(found_company,new_price)
+    
+#-------------------------------------------------------------
+    
+price_check=is_price_chanced(found_company,url,price_tag)
