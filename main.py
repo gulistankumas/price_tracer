@@ -2,8 +2,12 @@ import requests
 import lxml
 from bs4 import BeautifulSoup
 import pandas
-from csv import DictWriter, reader
+from csv import DictWriter
 import csv
+import smtplib
+
+MY_EMAİL="testmailbygk@gmail.com"
+MY_PASSWORD="jwcxnngkpujkawxe"
 
 #---------- Url'den company name bulma---------------------------
 data=pandas.read_csv("price_tags.csv")
@@ -25,12 +29,12 @@ def find_company_in_url(url):
     return "No company name found in the link"
 
 found_company = find_company_in_url(url)
-print(found_company)
+#print(found_company)
 
 #---------------------------------------------------------------
 tag=data[data.WEBSITE == found_company]
 price_tag= tag.iloc[0]['PRICE_TAG']
-print(price_tag)
+#print(price_tag)
 
 
 #---------------bulunan price ve company name data.csvye yazılır.---------
@@ -40,7 +44,9 @@ def find_price(url,tag,company):
     soup = BeautifulSoup(response.content, "lxml")
 
     price=soup.find(class_=tag).get_text()
+    #print(price)
     price_without_currency = price.split(" ")[0].split(".")
+    #print(price_without_currency)
     whole_price="".join(price_without_currency)
     
     
@@ -50,13 +56,14 @@ def find_price(url,tag,company):
         Dictwriter_object= DictWriter(f_object,fieldnames=field_names)
         Dictwriter_object.writerow(dict)
         f_object.close()
+    return whole_price
 #------------------------------------------------------------------------
-founded=find_price(url,price_tag,found_company)
+#founded=find_price(url,price_tag,found_company)
 
 
 price_info=pandas.read_csv("data.csv")
 data_dict=price_info.to_dict()
-print(data_dict)
+#print(data_dict)
 
 #----------------------price güncelle----------
 def update_price(company,new_price):
@@ -73,6 +80,8 @@ def update_price(company,new_price):
         writer = csv.DictWriter(file, fieldnames=field_names)
         writer.writeheader()
         writer.writerows(rows)
+    return new_price
+    
 
 
 #------------------price degismi mi kontrol eder---------------
@@ -105,3 +114,25 @@ def is_price_chanced(company,url,tag):
 #-------------------------------------------------------------
     
 price_check=is_price_chanced(found_company,url,price_tag)
+
+#----------------------------------------------------------
+import datetime as dt
+
+now=dt.datetime.now()
+hour= now.hour
+minute=now.minute
+if hour == 10 or 23 :
+    #if minute==00:
+    if price_check == "The price has not changed.":
+        print("The price has not changed.")
+    elif price_check != "empty dataframe":
+        with smtplib.SMTP("smtp.gmail.com") as connection:
+                connection.starttls()
+                connection.login(user=MY_EMAİL, password=MY_PASSWORD)
+                connection.sendmail(
+                    from_addr=MY_EMAİL, 
+                    to_addrs='ahmetkumas@outlook.com',
+                    msg='The price of the product you are following has dropped ! ')
+
+
+
