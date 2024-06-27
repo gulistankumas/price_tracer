@@ -131,7 +131,7 @@ if hour == 10 or 23 :
                 connection.login(user=MY_EMAİL, password=MY_PASSWORD)
                 connection.sendmail(
                     from_addr=MY_EMAİL, 
-                    to_addrs='ahmetkumas@outlook.com',
+                    to_addrs='email',
                     msg='The price of the product you are following has dropped ! ')
 
 
